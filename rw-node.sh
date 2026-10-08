@@ -2,6 +2,8 @@
 # rw-node — management tool for the permanent RUS XHTTP bridge.
 set -Eeuo pipefail
 
+SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 APP_DIR=/opt/remnawave/rw-node
 CONF=/etc/rw-node/rw-node.env
 EXITS_DIR="$APP_DIR/exits"
@@ -11,7 +13,7 @@ MARK_END='# RW-NODE-EXITS-END'
 die(){ echo "Ошибка: $*" >&2; exit 1; }
 note(){ echo "==> $*"; }
 need_root(){ [[ $EUID -eq 0 ]] || die 'Запустите через sudo.'; }
-load_config(){ [[ -r "$CONF" ]] || die "Нет $CONF. Создайте его по config/rw-node.env.example."; source "$CONF"; }
+load_config(){ [[ -r "$CONF" ]] || die "Нет $CONF. Создайте его по /usr/local/lib/rw-node/config/rw-node.env.example."; source "$CONF"; }
 valid_code(){ [[ "$1" =~ ^[a-z0-9]{2,12}$ ]] || die 'Код локации: 2–12 строчных латинских букв/цифр.'; }
 confirm(){ read -r -p "$1 [y/N]: " a; [[ "$a" =~ ^[Yy]$ ]]; }
 
@@ -19,7 +21,7 @@ bootstrap(){
   need_root
   install -d -m 700 /etc/rw-node "$APP_DIR" "$EXITS_DIR"
   if [[ ! -f "$CONF" ]]; then
-    install -m 600 "$(dirname "$0")/config/rw-node.env.example" "$CONF"
+    install -m 600 "$SCRIPT_DIR/config/rw-node.env.example" "$CONF"
     note "Создан $CONF — заполните его и повторите команду."
   fi
 }
@@ -52,11 +54,11 @@ server {
         client_body_timeout 5m;
         grpc_read_timeout 315s;
         grpc_send_timeout 5m;
-        grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         grpc_pass unix:$socket;
     }
 
-    location / { try_files \$uri \$uri/ =404; }
+    location / { try_files $uri $uri/ =404; }
 }
 EOF
 }
