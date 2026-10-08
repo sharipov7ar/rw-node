@@ -2,10 +2,11 @@
 set -Eeuo pipefail
 REPO_RAW="https://raw.githubusercontent.com/sharipov7ar/rw-node/main"
 [[ $EUID -eq 0 ]] || { echo 'Запустите через sudo.' >&2; exit 1; }
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+SOURCE="${BASH_SOURCE[0]}"
+ROOT=$(cd -- "$(dirname -- "$SOURCE")" && pwd)
 
-# Supports direct launch through process substitution.
-if [[ ! -f "$ROOT/rw-node.sh" ]]; then
+# Process substitution has no real directory with companion files.
+if [[ "$SOURCE" == /dev/fd/* || ! -f "$ROOT/rw-node.sh" || ! -f "$ROOT/config/rw-node.env.example" ]]; then
   WORKDIR=$(mktemp -d)
   trap 'rm -rf "$WORKDIR"' EXIT
   mkdir -p "$WORKDIR/config"
